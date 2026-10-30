@@ -18,6 +18,7 @@
 //
 // Also writes out/vo-takes-<timeline>.json: every take's language, text, target file and maximum
 // length, the list to record or generate from.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -165,12 +166,16 @@ function writePlaceholders(registry) {
   fs.mkdirSync(path.dirname(PLACEHOLDERS), { recursive: true });
   fs.writeFileSync(PLACEHOLDERS, JSON.stringify(registry, null, 2) + '\n');
 }
-/** The registry entry if the file is still the placeholder written there (same size and time). */
+// content hash, not size/mtime: git doesn't keep file times, so a clone must still recognise them
+function sha1(abs) {
+  return crypto.createHash('sha1').update(fs.readFileSync(abs)).digest('hex');
+}
+
+/** The registry entry if the file still holds the placeholder written there. */
 function isPlaceholder(registry, file) {
   const e = registry[file];
-  if (!e) return null;
-  const st = fs.statSync(path.resolve(ROOT, file), { throwIfNoEntry: false });
-  return st && st.size === e.size && Math.round(st.mtimeMs) === e.mtimeMs ? e : null;
+  const abs = path.resolve(ROOT, file);
+  return e && fs.existsSync(abs) && sha1(abs) === e.sha1 ? e : null;
 }
 
 function powershell(script, env = {}) {
@@ -251,8 +256,7 @@ function generateLocal() {
             next.push(c);
             continue;
           }
-          const st = fs.statSync(abs);
-          registry[c.file] = { voice: voice.name, rate: rate[c.id], text: cueText(c, job.lang), size: st.size, mtimeMs: Math.round(st.mtimeMs) };
+          registry[c.file] = { voice: voice.name, rate: rate[c.id], text: cueText(c, job.lang), sha1: sha1(abs) };
           const speed = rate[c.id] ? `, rate +${rate[c.id]}` : '';
           console.log(`    ${c.id}: ${sec.toFixed(2)}s / ${slot.toFixed(1)}s slot${speed}${sec > slot ? '  STILL TOO LONG at the fastest rate' : ''}`);
         }

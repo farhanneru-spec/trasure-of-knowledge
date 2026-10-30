@@ -3,35 +3,30 @@
     "voice": "Microsoft David Desktop",
     "rate": 0,
     "text": "Every journey begins with a single question.",
-    "size": 219954,
-    "mtimeMs": 1793358124397
+    "sha1": "df448438511752cf1ebcba1a95f90f4c87fd4c03"
   },
   "assets/vo/en/vo02.wav": {
     "voice": "Microsoft David Desktop",
     "rate": 0,
     "text": "Wisdom is not given. It is earned.",
-    "size": 261508,
-    "mtimeMs": 1793358124446
+    "sha1": "42a19abc1f58b198ed5aac180865afda3fa7fed3"
   },
   "assets/vo/en/vo04.wav": {
     "voice": "Microsoft David Desktop",
     "rate": 0,
     "text": "The answers you need are already within you.",
-    "size": 202346,
-    "mtimeMs": 1793358124516
+    "sha1": "44e9f63a91656edb839185ea6b2fbde72811f729"
   },
   "assets/vo/en/vo05.wav": {
     "voice": "Microsoft David Desktop",
     "rate": 0,
     "text": "This is Hikmat Ki Talaash, the search for wisdom.",
-    "size": 293088,
-    "mtimeMs": 1793358124556
+    "sha1": "e0f761de2b06849d0175a3f09bb792c365281aea"
   },
   "assets/vo/en/vo03.wav": {
     "voice": "Microsoft David Desktop",
     "rate": 5,
     "text": "Listen. Reflect. Seek.",
-    "size": 172028,
-    "mtimeMs": 1793358124936
+    "sha1": "1912470fa589e0c38defa132af518272b0390530"
   }
 }
