@@ -70,7 +70,13 @@ renders silent there.
 ```
 npm run voices -- --episode 1                    # every take: text, beat slot, file, fits or not
 npm run voices -- --episode 1 --import <folder>  # bring takes in: <lang>-<cue id>.<any audio format>
+npm run voices -- --episode 1 --local            # offline placeholder takes from Windows voices
 ```
+
+`--local` fills in missing takes with the speech voices installed in Windows (`--voice David` picks one),
+free and offline, speeding a line up until it fits its slot. It never overwrites a real take; its files are
+listed in `assets/vo/placeholders.json` and reported as "local placeholder" until replaced by `--import`. Windows
+ships English voices; Arabic can be added in *Settings → Time & Language → Speech*; there is no Urdu voice.
 
 The report estimates speaking time from the text, so lines likely to overrun their slot are flagged before
 anything is recorded, and writes `out/vo-takes-<timeline>.json` (every take's text, target file and maximum
