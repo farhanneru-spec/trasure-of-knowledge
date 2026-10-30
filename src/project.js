@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { ROOT, CONFIG, FFMPEG, FFPROBE, hasTool, processingEnabled } from './config.js';
 import { readManifest, scanMedia, isStale, MANIFEST_PATH } from './media.js';
 import { loadTheme } from './themes.js';
-import { resolveTimeline } from './timeline.js';
+import { resolveTimeline, voFile } from './timeline.js';
 import { readWavDuration } from './wav.js';
 
 export { ROOT, CONFIG, FFMPEG, FFPROBE, hasTool, processingEnabled };
@@ -84,12 +84,13 @@ export function findLocalBrowser() {
   return null;
 }
 
-function measureAudio(abs) {
+/** Seconds of audio: WAV read directly, anything else (mp3, m4a…) via the bundled ffmpeg. */
+export function measureAudio(abs) {
   if (path.extname(abs).toLowerCase() === '.wav') return readWavDuration(abs);
-  if (!hasTool(FFPROBE)) return null;
-  const r = spawnSync(FFPROBE, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', abs], { encoding: 'utf8' });
-  const d = parseFloat(r.stdout);
-  return Number.isFinite(d) ? d : null;
+  if (!hasTool(FFMPEG)) return null;
+  const text = spawnSync(FFMPEG, ['-hide_banner', '-i', abs], { encoding: 'utf8' }).stderr ?? '';
+  const d = /Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/.exec(text);
+  return d ? Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3]) : null;
 }
 
 /**
@@ -105,19 +106,22 @@ export function loadProject(job = resolveJob()) {
   const { theme, issues: themeIssues } = loadTheme(themeName);
   issues.push(...themeIssues);
 
+  // this job's language decides which voice-over takes are used and measured
+  const lang = job.lang ?? raw.languages?.[0] ?? 'ar';
   for (const c of raw.cues ?? []) {
-    if (!c.file) continue;
-    const abs = path.resolve(ROOT, c.file);
+    const file = voFile(raw, c, lang);
+    if (!file) continue;
+    const abs = path.resolve(ROOT, file);
     if (!fs.existsSync(abs)) {
-      issues.push({ level: 'warn', msg: `cue ${c.id}: audio not found (${c.file}); continuing without it` });
+      issues.push({ level: 'warn', msg: `cue ${c.id}: ${lang} voice-over not found (${file}); continuing without it` });
       continue;
     }
     try {
       const d = measureAudio(abs);
-      if (d == null) issues.push({ level: 'warn', msg: `cue ${c.id}: can't measure ${c.file} (use .wav or install ffprobe); fit not checked` });
+      if (d == null) issues.push({ level: 'warn', msg: `cue ${c.id}: can't measure ${file} (use .wav, or put ffmpeg in tools/ffmpeg/); fit not checked` });
       else audioDurations[c.id] = d;
     } catch (e) {
-      issues.push({ level: 'warn', msg: `cue ${c.id}: can't read ${c.file}: ${e.message}` });
+      issues.push({ level: 'warn', msg: `cue ${c.id}: can't read ${file}: ${e.message}` });
     }
   }
 

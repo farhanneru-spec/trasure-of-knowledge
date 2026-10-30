@@ -8,6 +8,7 @@
     "validate": "node scripts/validate.js",
     "captions": "node scripts/captions.js",
     "click": "node scripts/click.js",
+    "voices": "node scripts/voices.js",
     "preview": "node scripts/preview.js",
     "render": "node scripts/render.js",
     "still": "node scripts/render.js --still"

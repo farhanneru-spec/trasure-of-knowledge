@@ -186,7 +186,8 @@ function encode({ job, tl, from, duration, framesDir }) {
   args.push(
     ...map,
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18',
-    ...(audio.length ? ['-c:a', 'aac', '-b:a', '192k'] : []),
+    // the soundtrack is this language's voice-over, so tag it with the language
+    ...(audio.length ? ['-c:a', 'aac', '-b:a', '192k', '-metadata:s:a:0', `language=${LANGUAGES[job.lang].iso639_2}`] : []),
     ...(tracks.length ? ['-c:s', 'mov_text', ...subMeta] : []),
     '-t', String(duration),
     outFile,

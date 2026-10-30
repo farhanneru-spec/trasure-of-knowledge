@@ -1,3 +1,6 @@
-Put English VO takes here, one per cue, named after the cue id: `vo01.wav`, `vo02.wav`, ...
-Trim the silence at the head so the line starts at 0. The pipeline places each file at its cue's beat.
-WAV durations are measured natively; other formats need ffprobe on PATH.
+Voice-over takes, one folder per language, one file per cue: `en/vo01.wav`, `ar/vo01.wav`, `ur/vo01.wav`…
+(the path pattern is `vo.files` in the timeline). Each language's video uses its own language's takes.
+
+Easiest: put takes in any folder named `<lang>-<cue id>.<ext>` (e.g. `ur-vo04.mp3`, any audio format) and run
+`node scripts/voices.js --episode 1 --import <folder>`: it converts them to WAV here, trims silence at both ends so
+speech starts on the beat, and reports whether each take fits its slot.

@@ -7,9 +7,9 @@
   "height": 1080,
   "lengthBars": 16,
   "theme": "starlit",
-  "languages": ["ar", "ur"],
+  "languages": ["ar", "ur", "en"],
 
-  "vo": { "grid": 1 },
+  "vo": { "grid": 1, "files": "assets/vo/{lang}/{id}.wav" },
 
   "music": { "file": null, "at": "1:1" },
 
@@ -26,32 +26,32 @@
 
   "cues": [
     {
-      "id": "vo01", "at": "2:1", "beats": 6, "file": "assets/vo/vo01.wav",
+      "id": "vo01", "at": "2:1", "beats": 6,
       "en": "Every journey begins with a single question.",
       "ar": "كل رحلة تبدأ بسؤال واحد.",
       "ur": "ہر سفر ایک سوال سے شروع ہوتا ہے۔"
     },
     {
-      "id": "vo02", "at": "4:1", "beats": 6, "file": "assets/vo/vo02.wav",
+      "id": "vo02", "at": "4:1", "beats": 6,
       "en": "Wisdom is not given. It is earned.",
       "ar": "الحكمة لا تُعطى، بل تُكتسب.",
       "ur": "حکمت دی نہیں جاتی، کمائی جاتی ہے۔"
     },
     {
-      "id": "vo03", "at": "6:1", "beats": 4, "file": "assets/vo/vo03.wav",
+      "id": "vo03", "at": "6:1", "beats": 4,
       "en": "Listen. Reflect. Seek.",
       "ar": "استمع. تأمّل. ابحث.",
       "ur": "سنو۔ سوچو۔ تلاش کرو۔",
       "caption": { "stepBeats": 1 }
     },
     {
-      "id": "vo04", "at": "8:1", "beats": 8, "file": "assets/vo/vo04.wav",
+      "id": "vo04", "at": "8:1", "beats": 8,
       "en": "The answers you need are already within you.",
       "ar": "الإجابات التي تحتاجها موجودة في داخلك.",
       "ur": "جن جوابوں کی تمہیں ضرورت ہے، وہ پہلے ہی تمہارے اندر ہیں۔"
     },
     {
-      "id": "vo05", "at": "11:1", "beats": 8, "file": "assets/vo/vo05.wav",
+      "id": "vo05", "at": "11:1", "beats": 8,
       "en": "This is Hikmat Ki Talaash, the search for wisdom.",
       "ar": "هذه هي حكمت كي تلاش، رحلة البحث عن الحكمة.",
       "ur": "یہ ہے حکمت کی تلاش، دانائی کی جستجو۔"
@@ -59,6 +59,6 @@
   ],
 
   "captions": [
-    { "id": "title-card", "at": "14:1", "bars": 2, "ar": "البحث عن الحكمة", "ur": "حکمت کی تلاش", "reveal": "line", "fadeBeats": 1 }
+    { "id": "title-card", "at": "14:1", "bars": 2, "ar": "البحث عن الحكمة", "ur": "حکمت کی تلاش", "en": "The Search for Wisdom", "reveal": "line", "fadeBeats": 1 }
   ]
 }

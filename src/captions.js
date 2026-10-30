@@ -102,7 +102,8 @@ export function writeCaptionFiles(timeline, outDir) {
     ]),
   ];
 
-  files['captions.en.srt'] = BOM + toSRT(en);
+  // English reference subtitles from the VO script, unless English is already a caption language
+  if (!timeline.languages.includes('en')) files['captions.en.srt'] = BOM + toSRT(en);
   files['vo-cue-sheet.csv'] = BOM + sheet.map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
   fs.mkdirSync(outDir, { recursive: true });
   const written = Object.entries(files).map(([name, body]) => {

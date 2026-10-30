@@ -3,6 +3,16 @@ import { LANGUAGES, langInfo } from './languages.js';
 
 const EPS = 1e-6;
 
+// Where a cue's voice-over lives for a language. A cue's own "file" wins: a string (shared, or a
+// pattern with {lang}/{id}) or an object per language; otherwise the timeline's vo.files pattern.
+export const VO_PATTERN = 'assets/vo/{lang}/{id}.wav';
+export function voFile(raw, cue, lang) {
+  const fill = (p) => p.replaceAll('{lang}', lang).replaceAll('{id}', cue.id);
+  if (cue.file && typeof cue.file === 'object') return cue.file[lang] ?? null;
+  if (typeof cue.file === 'string') return fill(cue.file);
+  return fill(raw.vo?.files ?? VO_PATTERN);
+}
+
 export const CAPTION_DEFAULTS = {
   reveal: 'word', // 'word' = words appear one by one, 'line' = whole caption at once
   stepBeats: 0.5, // gap between word entrances (0.5 = eighth notes at 120 BPM = 0.25s)
@@ -80,7 +90,7 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, 
     lang = languages[0];
   }
 
-  // English VO cues, locked to the beat grid
+  // VO cues, locked to the beat grid (the take is this language's; `en` is the source script)
   const cues = (raw.cues ?? [])
     .map((c) => {
       const label = `cue ${c.id}`;
@@ -105,7 +115,7 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, 
         id: c.id,
         en: c.en ?? '',
         text: Object.fromEntries(languages.map((code) => [code, (c[code] ?? '').trim()])),
-        file: c.file ?? null,
+        file: voFile(raw, c, lang), // this language's voice-over take
         startBeat,
         endBeat: startBeat + beats,
         beats,
