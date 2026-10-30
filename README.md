@@ -93,7 +93,7 @@ media. Its `"theme"` picks the default look; `--theme` overrides it for one rend
 | `backgrounds` | CSS backgrounds given to scenes in order (cycling); a scene's own `"bg"` wins |
 | `motif` | `type` (`star8`, `arch`, `none`), `color`, `opacity`, `pulse` (beat swell), `rotateDegPer8Bars`, `size`, `y` (% from top) |
 | `title` | `font`, `weight`, `color`, `size`, `letterSpacing`, `y` |
-| `caption` | `color`, `size`, `shadow`, `plate` (`color`, `radius`, `padX`, `padY`): a soft panel behind the Arabic text |
+| `caption` | `color`, `size`, `shadow`, `plate` (`color`, `radius`, `padX`, `padY`, `grow`): a soft panel behind the caption; with `grow` (default) it covers only the words revealed so far, growing in reading direction |
 | `particles` | ambient drifting lights: `count`, `color`, `minSize`, `maxSize`, `rise` (px/s), `sway`, `opacity`, `seed` |
 | `vignette` | 0–1 edge darkening |
 | `captionDefaults`, `mediaDefaults`, `overlayDefaults` | defaults for the timeline sections of the same name |

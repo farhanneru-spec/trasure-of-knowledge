@@ -95,7 +95,9 @@ html, body { margin: 0; background: #000; overflow: hidden; }
   font-weight: 700;
   line-height: 1.7;
 }
-#caption .plate { display: inline-block; }
+#caption .plate { display: inline-block; position: relative; z-index: 0; }
+/* the plate's background is its own box behind the words, so it can grow word by word */
+#caption .plate-bg { position: absolute; z-index: -1; inset: 0; }
 #caption .w { display: inline-block; opacity: 0; will-change: transform, opacity; }
 
 #debug {

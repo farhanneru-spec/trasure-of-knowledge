@@ -191,16 +191,22 @@ function setLive(on) {
 
 let shownCaption = null;
 let wordEls = [];
+let plateBg = null;
 function buildCaption(cap) {
   caption.replaceChildren();
   wordEls = [];
+  plateBg = null;
   if (!cap) return;
   // words sit on a plate (a soft panel behind the text) when the theme has one
   const plate = document.createElement('span');
   plate.className = 'plate';
   const P = T.caption.plate;
   if (P) {
-    Object.assign(plate.style, { background: P.color, borderRadius: px(P.radius), padding: `${px(P.padY)} ${px(P.padX)}` });
+    plate.style.padding = `${px(P.padY)} ${px(P.padX)}`;
+    plateBg = document.createElement('span');
+    plateBg.className = 'plate-bg';
+    Object.assign(plateBg.style, { background: P.color, borderRadius: px(P.radius) });
+    plate.append(plateBg);
   }
   caption.append(plate);
   cap.words.forEach((w, i) => {
@@ -210,6 +216,42 @@ function buildCaption(cap) {
     el.textContent = w.text;
     plate.append(el);
     wordEls.push(el);
+  });
+}
+
+// Fit the plate to the revealed words. Layout offsets ignore the words' entrance transforms,
+// so the plate stays steady; a word that is mid-entrance contributes the part of its width
+// its progress k has reached, measured from the reading-start side (right in RTL).
+function growPlate(ks) {
+  const P = T.caption.plate;
+  const rtl = LANG.dir === 'rtl';
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  wordEls.forEach((el, n) => {
+    const k = ks[n];
+    if (k <= 0) return;
+    const l = el.offsetLeft;
+    const w = el.offsetWidth;
+    x0 = Math.min(x0, rtl ? l + w * (1 - k) : l);
+    x1 = Math.max(x1, rtl ? l + w : l + w * k);
+    y0 = Math.min(y0, el.offsetTop);
+    y1 = Math.max(y1, el.offsetTop + el.offsetHeight);
+  });
+  if (x1 < x0) {
+    plateBg.style.visibility = 'hidden';
+    return;
+  }
+  const padX = P.padX * u;
+  const padY = P.padY * u;
+  Object.assign(plateBg.style, {
+    visibility: 'visible',
+    inset: 'auto',
+    left: `${x0 - padX}px`,
+    top: `${y0 - padY}px`,
+    width: `${x1 - x0 + 2 * padX}px`,
+    height: `${y1 - y0 + 2 * padY}px`,
   });
 }
 
@@ -277,11 +319,13 @@ function renderFrame(t) {
   }
   if (cap) {
     caption.style.opacity = cap.fadeBeats > 0 ? clamp01((cap.endBeat - beat) / cap.fadeBeats) : 1;
-    cap.words.forEach((w, n) => {
+    const ks = cap.words.map((w, n) => {
       const k = easeOut((beat - w.inBeat) / Math.max(cap.wordInBeats, 1e-3));
       wordEls[n].style.opacity = k;
       wordEls[n].style.transform = `translateY(${(1 - k) * 0.35}em)`;
+      return k;
     });
+    if (plateBg && T.caption.plate.grow) growPlate(ks);
   }
 
   if (!debug.hidden) {

@@ -18,7 +18,8 @@ const BASE = {
   vignette: 0,
 };
 const PARTICLES = { count: 30, color: '#ffffff', minSize: 2, maxSize: 6, rise: 20, sway: 12, opacity: 0.5, seed: 1 };
-const PLATE = { color: 'rgba(0, 0, 0, 0.4)', radius: 16, padX: 28, padY: 4 };
+// grow: the plate covers only the words revealed so far (false = full-width plate from the start)
+const PLATE = { color: 'rgba(0, 0, 0, 0.4)', radius: 16, padX: 28, padY: 4, grow: true };
 
 export const listThemes = () =>
   fs.existsSync(THEMES_DIR)
