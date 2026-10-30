@@ -18,10 +18,13 @@ for (const c of tl.cues) {
   console.log(`  ${c.id}  ${clock.label(c.startBeat).padEnd(6)} -> ${clock.label(c.endBeat).padEnd(6)} ` +
     `${String(c.beats).padStart(3)} beats  ${c.start.toFixed(2)}-${c.end.toFixed(2)}s  ${audio.padEnd(13)} ${c.en}`);
 }
-console.log('\nArabic captions');
-for (const c of tl.captions) {
-  console.log(`  ${c.id.padEnd(9)} ${clock.label(c.startBeat).padEnd(6)} -> ${clock.label(c.endBeat).padEnd(6)} ` +
-    `${c.words.length} words  ${c.text}`);
+for (const code of tl.languages) {
+  const name = code === tl.lang.code ? `${tl.lang.name} captions (burned in)` : `${code} captions`;
+  console.log(`\n${name}`);
+  for (const c of tl.captionTracks[code]) {
+    console.log(`  ${c.id.padEnd(10)} ${clock.label(c.startBeat).padEnd(6)} -> ${clock.label(c.endBeat).padEnd(6)} ` +
+      `${String(c.words.length).padStart(2)} words  ${c.text}`);
+  }
 }
 
 if (tl.media.length) {

@@ -7,6 +7,12 @@
   font-display: block;
 }
 @font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  src: url('../assets/fonts/NotoNastaliqUrdu%5Bwght%5D.ttf') format('truetype');
+  font-weight: 400 700;
+  font-display: block;
+}
+@font-face {
   font-family: 'Cormorant Garamond';
   src: url('../assets/fonts/CormorantGaramond%5Bwght%5D.ttf') format('truetype');
   font-weight: 300 700;
@@ -74,8 +80,9 @@ html, body { margin: 0; background: #000; overflow: hidden; }
   opacity: 0;
 }
 
-/* Arabic captions: dir="rtl" on the element so the bidi algorithm orders words
-   right-to-left; each word is its own inline-block for the beat-timed reveal. */
+/* Captions: scene.js sets dir/lang, font and size from the caption language (rtl for Arabic
+   and Urdu, so the bidi algorithm orders words right-to-left); each word is its own
+   inline-block for the beat-timed reveal. */
 #caption {
   position: absolute;
   left: 10%;

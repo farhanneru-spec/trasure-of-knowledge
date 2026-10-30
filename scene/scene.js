@@ -71,7 +71,19 @@ Object.assign(title.style, {
   font: `${T.title.weight} ${px(T.title.size)} '${T.title.font}', Georgia, serif`,
   letterSpacing: T.title.letterSpacing,
 });
-Object.assign(caption.style, { color: T.caption.color, fontSize: px(T.caption.size), textShadow: T.caption.shadow });
+// caption language: script direction, font and proportions (Nastaliq Urdu runs taller than Naskh Arabic)
+const LANG = tl.lang;
+caption.dir = LANG.dir;
+caption.lang = LANG.code;
+Object.assign(caption.style, {
+  direction: LANG.dir,
+  fontFamily: `'${LANG.font}', 'Segoe UI', Tahoma, sans-serif`,
+  fontWeight: LANG.weight,
+  lineHeight: LANG.lineHeight,
+  fontSize: px(T.caption.size * LANG.sizeScale),
+  color: T.caption.color,
+  textShadow: T.caption.shadow,
+});
 
 vignette.hidden = !(T.vignette > 0);
 vignette.style.background = `radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0, 0, 0, ${T.vignette}) 100%)`;
@@ -276,7 +288,7 @@ function renderFrame(t) {
     const vo = activeAt(tl.cues, beat);
     debug.classList.toggle('down', downbeat);
     debug.textContent =
-      `${tl.job} · ${T.name}   ${clock.label(whole)}  beat ${beat.toFixed(2)}  ${t.toFixed(3)}s  frame ${Math.round(t * tl.fps)}\n` +
+      `${tl.job} · ${T.name} · ${LANG.code}   ${clock.label(whole)}  beat ${beat.toFixed(2)}  ${t.toFixed(3)}s  frame ${Math.round(t * tl.fps)}\n` +
       `VO ${vo ? `[${vo.id}] ${vo.en}` : '-'}` +
       (activeMedia.length ? `\nmedia ${activeMedia.join(', ')}` : '') +
       (RENDER ? '' : `\nSpace play · ←/→ beat · Shift+←/→ bar · Home · C click · D debug`);
@@ -289,7 +301,7 @@ function renderFrame(t) {
 // With font-display: block a run stays invisible until its font loads, so request
 // every string the timeline will show before declaring the scene ready.
 await Promise.all([
-  document.fonts.load(`700 64px "Noto Naskh Arabic"`, tl.captions.map((c) => c.text).join(' ') || 'الحكمة'),
+  document.fonts.load(`${LANG.weight} 64px "${LANG.font}"`, tl.captions.map((c) => c.text).join(' ') || 'الحكمة'),
   document.fonts.load(`${T.title.weight} 84px "${T.title.font}"`, tl.scenes.map((s) => s.title ?? '').join(' ') || 'Hikmat'),
 ]).catch(() => {});
 await document.fonts.ready;

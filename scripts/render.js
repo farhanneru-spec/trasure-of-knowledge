@@ -1,15 +1,16 @@
-// Renders the scene frame by frame with Puppeteer, then (if ffmpeg is available)
-// encodes MP4 with the VO mixed in at its beat positions and the Arabic SRT as a soft track.
+// Renders the scene frame by frame with Puppeteer, then encodes MP4 with ffmpeg: the VO mixed
+// in at its beat positions and every caption language as a subtitle track.
 //
-//   node scripts/render.js                               default timeline, full render
-//   node scripts/render.js --episode 1 --theme cozy-courtyard
+//   node scripts/render.js                                     default timeline, every language
+//   node scripts/render.js --episode 1 --theme cozy-courtyard  one video per caption language
+//   node scripts/render.js --episode 1 --langs ur              just the Urdu video
 //   node scripts/render.js --from 5:1 --to 9:1
-//   node scripts/render.js --still 6:3                   single PNG
-//   options: --episode N, --theme NAME, --timeline FILE,
+//   node scripts/render.js --still 6:3                         single PNG (per language)
+//   options: --episode N, --theme NAME, --langs ar,ur, --timeline FILE,
 //            --workers N (parallel browsers, default half the CPU threads),
 //            --debug (burn in beat overlay), --no-encode
-// Output goes to out/<job>/ (frames, stills, captions) and out/<job>.mp4,
-// where <job> is the timeline name plus the theme when --theme is given.
+// Each language is a job: out/<job>/ (frames, stills, captions) and out/<job>.mp4, where <job>
+// is the timeline name, plus the theme when --theme is given, plus the language.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,10 +20,11 @@ import { createClock } from '../src/beat.js';
 import { writeCaptionFiles } from '../src/captions.js';
 import { parseJobArgs } from '../src/cli.js';
 import { ensureIngested } from '../src/ingest.js';
+import { LANGUAGES } from '../src/languages.js';
 import { loadProject, printIssues, hasTool, findLocalBrowser, CONFIG, FFMPEG, OUT, ROOT } from '../src/project.js';
 import { startServer } from '../src/server.js';
 
-const { opt, job } = parseJobArgs({
+const { opt, jobs } = parseJobArgs({
   from: { type: 'string' },
   to: { type: 'string' },
   still: { type: 'string' },
@@ -30,13 +32,6 @@ const { opt, job } = parseJobArgs({
   debug: { type: 'boolean', default: false },
   'no-encode': { type: 'boolean', default: false },
 });
-
-await ensureIngested();
-const { timeline: tl, issues, dataUrl } = loadProject(job);
-console.log(`${job.name}: ${job.file}, theme ${tl.theme?.name ?? 'none'}`);
-if (printIssues(issues)) process.exit(1);
-const clock = createClock(tl.clock);
-const parseTime = (v) => (v.includes(':') ? clock.toSec(clock.parse(v)) : Number(v));
 const rel = (p) => path.relative(ROOT, p);
 
 const executablePath = findLocalBrowser();
@@ -45,11 +40,33 @@ if (!executablePath) {
   process.exit(1);
 }
 
+await ensureIngested();
+// resolve every job first, so a problem in any language stops the run before rendering starts
+const loaded = jobs.map((job) => ({ job, ...loadProject(job) }));
+let failed = false;
+for (const { job, issues, timeline } of loaded) {
+  console.log(`${job.name}: ${job.file}, theme ${timeline.theme?.name}, captions ${timeline.lang.name}`);
+  failed = printIssues(issues) || failed;
+}
+if (failed) process.exit(1);
+
 const server = await startServer(ROOT);
-// one browser per worker: background tabs in a shared browser don't paint, so screenshots stall
-const browsers = [];
-const blocked = new Set();
 try {
+  for (const l of loaded) await renderJob(l);
+} finally {
+  server.close();
+}
+if (loaded.length > 1 && !opt.still && !opt['no-encode']) {
+  console.log(`\ndone: ${loaded.map(({ job }) => rel(path.join(OUT, `${job.name}.mp4`))).join(', ')}`);
+}
+
+async function renderJob({ job, timeline: tl, dataUrl }) {
+  const clock = createClock(tl.clock);
+  const parseTime = (v) => (v.includes(':') ? clock.toSec(clock.parse(v)) : Number(v));
+  // one browser per worker: background tabs in a shared browser don't paint, so screenshots stall
+  const browsers = [];
+  const blocked = new Set();
+
   async function openScene() {
     const browser = await puppeteer.launch({ headless: 'shell', executablePath });
     browsers.push(browser);
@@ -82,13 +99,15 @@ try {
     await page.screenshot({ path: file, type: 'png', optimizeForSpeed: true, captureBeyondViewport: false });
   };
 
-  if (opt.still) {
-    const dir = path.join(job.dir, 'stills');
-    fs.mkdirSync(dir, { recursive: true });
-    const file = path.join(dir, `still_${opt.still.replace(/[:.]/g, '-')}.png`);
-    await shoot(await openScene(), parseTime(opt.still), file);
-    console.log(`wrote ${rel(file)}`);
-  } else {
+  try {
+    if (opt.still) {
+      const dir = path.join(job.dir, 'stills');
+      fs.mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, `still_${opt.still.replace(/[:.]/g, '-')}.png`);
+      await shoot(await openScene(), parseTime(opt.still), file);
+      console.log(`wrote ${rel(file)}`);
+      return;
+    }
     const from = opt.from ? parseTime(opt.from) : 0;
     const to = opt.to ? parseTime(opt.to) : tl.lengthSec;
     const first = Math.round(from * tl.fps);
@@ -115,16 +134,15 @@ try {
     );
     console.log(`\nrendered ${count} frames to ${rel(framesDir)} in ${((Date.now() - started) / 1000).toFixed(1)}s`);
 
-    if (!opt['no-encode']) encode({ from, duration: count / tl.fps, framesDir });
+    if (!opt['no-encode']) encode({ job, tl, from, duration: count / tl.fps, framesDir });
+  } finally {
+    await Promise.all(browsers.map((b) => b.close()));
   }
-} finally {
-  await Promise.all(browsers.map((b) => b.close()));
-  server.close();
 }
 
-function encode({ from, duration, framesDir }) {
+function encode({ job, tl, from, duration, framesDir }) {
   if (!hasTool(FFMPEG)) {
-    console.log('ffmpeg not found (install it or set FFMPEG=path\\to\\ffmpeg.exe); frames are ready to encode.');
+    console.log('ffmpeg not found (put ffmpeg.exe in tools/ffmpeg/); frames are ready to encode.');
     return;
   }
   const audio = [
@@ -138,9 +156,11 @@ function encode({ from, duration, framesDir }) {
   ];
   for (const a of audio) args.push('-i', path.resolve(ROOT, a.file));
 
-  // soft Arabic subtitle track only for full renders (times are absolute)
-  const subs = from === 0 ? writeCaptionFiles(tl, job.dir).find((f) => f.endsWith('captions.ar.srt')) : null;
-  if (subs) args.push('-i', subs);
+  // subtitle tracks for every language, the burned-in one first and default (full renders only:
+  // subtitle times are absolute)
+  const tracks = from === 0 ? writeCaptionFiles(tl, job.dir).tracks : [];
+  tracks.sort((a, b) => Number(b.code === tl.lang.code) - Number(a.code === tl.lang.code));
+  for (const t of tracks) args.push('-i', t.srt);
 
   const map = ['-map', '0:v'];
   if (audio.length) {
@@ -154,18 +174,25 @@ function encode({ from, duration, framesDir }) {
     args.push('-filter_complex', [...chains, mix].join(';'));
     map.push('-map', '[aout]');
   }
-  if (subs) map.push('-map', `${audio.length + 1}:s`);
+  const subMeta = [];
+  tracks.forEach((t, i) => {
+    map.push('-map', `${audio.length + 1 + i}:s`);
+    const L = LANGUAGES[t.code];
+    subMeta.push(`-metadata:s:s:${i}`, `language=${L.iso639_2}`, `-metadata:s:s:${i}`, `title=${L.name}`);
+    subMeta.push(`-disposition:s:${i}`, i === 0 ? 'default' : '0');
+  });
 
   const outFile = path.join(OUT, `${job.name}.mp4`);
   args.push(
     ...map,
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18',
     ...(audio.length ? ['-c:a', 'aac', '-b:a', '192k'] : []),
-    ...(subs ? ['-c:s', 'mov_text', '-metadata:s:s:0', 'language=ara'] : []),
+    ...(tracks.length ? ['-c:s', 'mov_text', ...subMeta] : []),
     '-t', String(duration),
     outFile,
   );
-  console.log(`encoding ${rel(outFile)} (${audio.length} audio input(s)${subs ? ', Arabic subtitle track' : ''})`);
+  const subs = tracks.map((t) => LANGUAGES[t.code].name).join(' + ');
+  console.log(`encoding ${rel(outFile)} (${audio.length} audio input(s)${subs ? `, subtitles: ${subs}` : ''})`);
   const r = spawnSync(FFMPEG, args, { stdio: 'inherit' });
   if (r.status !== 0) throw new Error(`ffmpeg exited with ${r.status}`);
   console.log(`wrote ${rel(outFile)}`);

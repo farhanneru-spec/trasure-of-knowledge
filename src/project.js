@@ -22,12 +22,38 @@ export function listEpisodes() {
   return fs.readdirSync(dir).map((f) => re.exec(f)?.[1]).filter(Boolean).map(Number).sort((a, b) => a - b);
 }
 
+/** The caption languages a timeline file declares (first = default). */
+function timelineLanguages(file) {
+  try {
+    return JSON.parse(fs.readFileSync(path.resolve(ROOT, file), 'utf8')).languages ?? ['ar'];
+  } catch {
+    return ['ar'];
+  }
+}
+
 /**
- * What to work on: a timeline (by --episode N, --timeline FILE, or the default) and an
- * optional theme override. Each job writes to its own out/<name>/ folder, so episodes and
- * theme variants never overwrite each other.
+ * What to work on: a timeline (by --episode N, --timeline FILE, or the default), an optional
+ * theme override, and the caption languages (default: all the timeline has). One job per
+ * language; each writes to its own out/<name>/ folder and out/<name>.mp4, so episodes,
+ * theme variants and languages never overwrite each other.
  */
-export function resolveJob({ episode, theme, timeline } = {}) {
+export function resolveJobs({ episode, theme, timeline, langs } = {}) {
+  const file = resolveTimelineFile({ episode, timeline });
+  const all = timelineLanguages(file);
+  const chosen = langs?.length ? langs : all;
+  for (const l of chosen) {
+    if (!all.includes(l)) throw new Error(`language "${l}" isn't in ${file} (its languages: ${all.join(', ')})`);
+  }
+  const base = path.basename(file, '.json') + (theme ? `-${theme}` : '');
+  return chosen.map((lang) => {
+    const name = all.length > 1 ? `${base}-${lang}` : base; // single-language timelines keep the short name
+    return { file, theme: theme ?? null, lang, name, dir: path.join(OUT, name) };
+  });
+}
+
+export const resolveJob = (options) => resolveJobs(options)[0];
+
+function resolveTimelineFile({ episode, timeline }) {
   let file = timeline ?? process.env.TIMELINE;
   if (episode != null) {
     const n = Number(episode);
@@ -40,9 +66,7 @@ export function resolveJob({ episode, theme, timeline } = {}) {
   }
   file ??= DEFAULT_TIMELINE;
   if (!fs.existsSync(path.resolve(ROOT, file))) throw new Error(`timeline ${file} doesn't exist`);
-  const base = path.basename(file, '.json');
-  const name = theme ? `${base}-${theme}` : base;
-  return { file, theme: theme ?? null, name, dir: path.join(OUT, name) };
+  return file;
 }
 
 /** The project-local chrome-headless-shell executable, newest version first, or null. */
@@ -102,7 +126,7 @@ export function loadProject(job = resolveJob()) {
     issues.push({ level: 'warn', msg: `media folder changed since the last ingest; run \`npm run ingest\` to update ${path.relative(ROOT, MANIFEST_PATH)}` });
   }
 
-  const resolved = resolveTimeline(raw, { audioDurations, media: manifest?.assets ?? {}, theme });
+  const resolved = resolveTimeline(raw, { audioDurations, media: manifest?.assets ?? {}, theme, lang: job.lang });
   issues.push(...resolved.issues);
   const { timeline } = resolved;
   timeline.job = job.name;

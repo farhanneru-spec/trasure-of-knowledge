@@ -1,7 +1,7 @@
 import { createClock } from './beat.js';
+import { LANGUAGES, langInfo } from './languages.js';
 
 const EPS = 1e-6;
-const ARABIC = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
 
 export const CAPTION_DEFAULTS = {
   reveal: 'word', // 'word' = words appear one by one, 'line' = whole caption at once
@@ -47,7 +47,7 @@ const byStart = (a, b) => a.startBeat - b.startBeat;
  * Turn the authored timeline (positions in bars/beats) into absolute beats and
  * seconds, and collect sync problems. Pure: audio durations are passed in.
  */
-export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, theme = null } = {}) {
+export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, theme = null, lang = null } = {}) {
   const issues = [];
   const error = (msg) => issues.push({ level: 'error', msg });
   const warn = (msg) => issues.push({ level: 'warn', msg });
@@ -66,6 +66,19 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, 
     }
   };
   const length = (item) => item.beats ?? (item.bars != null ? item.bars * clock.beatsPerBar : undefined);
+
+  // caption languages: the timeline lists them; `lang` picks the one burned into this render
+  const languages = (raw.languages ?? ['ar']).filter((code) => {
+    if (code in LANGUAGES) return true;
+    error(`languages: "${code}" isn't supported (supported: ${Object.keys(LANGUAGES).join(', ')})`);
+    return false;
+  });
+  if (!languages.length) languages.push('ar');
+  lang ??= languages[0];
+  if (!languages.includes(lang)) {
+    error(`language "${lang}" isn't in this timeline's "languages" (${languages.join(', ')})`);
+    lang = languages[0];
+  }
 
   // English VO cues, locked to the beat grid
   const cues = (raw.cues ?? [])
@@ -91,7 +104,7 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, 
       return {
         id: c.id,
         en: c.en ?? '',
-        ar: c.ar ?? '',
+        text: Object.fromEntries(languages.map((code) => [code, (c[code] ?? '').trim()])),
         file: c.file ?? null,
         startBeat,
         endBeat: startBeat + beats,
@@ -110,10 +123,13 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, 
     }
   }
 
-  // Arabic captions: one per VO cue (inherits its timing) plus standalone ones
-  function makeCaption(id, text, startBeat, endBeat, o, label) {
-    text = text.trim();
-    if (!ARABIC.test(text)) warn(`${label}: caption text has no Arabic characters`);
+  // Captions: one track per language. Each VO cue gives a caption with its timing, plus
+  // standalone ones (title cards). A video burns in one track; all are exported as subtitles.
+  function makeCaption(id, text, startBeat, endBeat, o, label, code) {
+    const L = LANGUAGES[code];
+    if (!L.script.test(text)) warn(`${label}: ${L.name} caption has no ${L.name} script characters`);
+    const lint = L.lint?.(text);
+    if (lint) warn(`${label}: ${L.name} caption ${lint}`);
     const start = startBeat + o.offsetBeats;
     const end = endBeat + o.holdBeats;
     const step = o.reveal === 'word' ? o.stepBeats : 0;
@@ -134,37 +150,49 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, 
     };
   }
 
-  const captions = [];
-  for (const c of cues) {
-    if (!c.ar) {
-      warn(`cue ${c.id}: no Arabic caption ("ar")`);
-      continue;
+  function buildTrack(code) {
+    const L = LANGUAGES[code];
+    const track = [];
+    for (const c of cues) {
+      if (!c.text[code]) {
+        warn(`cue ${c.id}: no ${L.name} caption ("${code}")`);
+        continue;
+      }
+      track.push(makeCaption(c.id, c.text[code], c.startBeat, c.endBeat, { ...capDefaults, ...c.caption }, `cue ${c.id}`, code));
     }
-    captions.push(makeCaption(c.id, c.ar, c.startBeat, c.endBeat, { ...capDefaults, ...c.caption }, `cue ${c.id}`));
-  }
-  for (const c of raw.captions ?? []) {
-    const label = `caption ${c.id}`;
-    const start = position(c, label);
-    const beats = length(c);
-    if (beats == null) {
-      error(`${label}: needs "beats" or "bars"`);
-      continue;
+    for (const c of raw.captions ?? []) {
+      const label = `caption ${c.id}`;
+      const start = position(c, label);
+      const beats = length(c);
+      if (beats == null) {
+        if (code === languages[0]) error(`${label}: needs "beats" or "bars"`);
+        continue;
+      }
+      const text = (c[code] ?? '').trim();
+      if (!text) {
+        warn(`${label}: no ${L.name} text ("${code}")`);
+        continue;
+      }
+      track.push(makeCaption(c.id, text, start, start + beats, { ...capDefaults, holdBeats: 0, ...captionOpts(c) }, label, code));
     }
-    captions.push(makeCaption(c.id, c.ar ?? '', start, start + beats, { ...capDefaults, holdBeats: 0, ...captionOpts(c) }, label));
+
+    // one caption on screen at a time: an earlier caption's hold is cut when the next begins
+    track.sort(byStart);
+    for (let i = 1; i < track.length; i++) {
+      const prev = track[i - 1];
+      const cur = track[i];
+      if (cur.startBeat < prev.endBeat - EPS) {
+        if (cur.startBeat < prev.minEndBeat - EPS) {
+          warn(`caption ${cur.id} (${code}) starts before ${prev.id} has finished; ${prev.id} is cut at ${clock.label(cur.startBeat)}`);
+        }
+        prev.endBeat = cur.startBeat;
+      }
+    }
+    return track;
   }
 
-  // one caption on screen at a time: an earlier caption's hold is cut when the next begins
-  captions.sort(byStart);
-  for (let i = 1; i < captions.length; i++) {
-    const prev = captions[i - 1];
-    const cur = captions[i];
-    if (cur.startBeat < prev.endBeat - EPS) {
-      if (cur.startBeat < prev.minEndBeat - EPS) {
-        warn(`caption ${cur.id} starts before caption ${prev.id} has finished; ${prev.id} is cut at ${clock.label(cur.startBeat)}`);
-      }
-      prev.endBeat = cur.startBeat;
-    }
-  }
+  const captionTracks = Object.fromEntries(languages.map((code) => [code, buildTrack(code)]));
+  const captions = captionTracks[lang] ?? [];
 
   const contentEnd = Math.max(0, ...cues.map((c) => c.endBeat), ...captions.map((c) => c.endBeat));
   const lengthBeats =
@@ -350,7 +378,7 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, 
       start: clock.toSec(x.startBeat),
       ...(x.endBeat != null && { end: clock.toSec(x.endBeat) }),
     });
-  [...scenes, ...cues, ...captions, ...media].forEach(withSec);
+  [...scenes, ...cues, ...Object.values(captionTracks).flat(), ...media].forEach(withSec);
   if (music) withSec(music);
 
   return {
@@ -366,7 +394,10 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, 
       lengthSec: clock.toSec(lengthBeats),
       scenes,
       cues,
-      captions,
+      lang: langInfo(lang), // the burned-in caption language
+      languages,
+      captions, // the burned-in track (= captionTracks[lang])
+      captionTracks, // every language, for subtitle files and MP4 subtitle tracks
       media,
       music,
       // only the visual part goes to the scene; the *Defaults sections were applied above
