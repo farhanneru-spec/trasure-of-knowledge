@@ -1,0 +1,28 @@
+{
+  "description": "Warm evening courtyard: terracotta and amber dusk, an arched doorway with a hanging lantern, drifting lantern embers, soft vignette, warm caption plate. First draft.",
+  "backgrounds": [
+    "radial-gradient(ellipse at 50% 32%, #7a4226 0%, #3a1d10 48%, #1d0e07 80%)",
+    "radial-gradient(ellipse at 50% 34%, #8a5428 0%, #3d2412 50%, #1c1008 82%)",
+    "radial-gradient(ellipse at 50% 36%, #5f4a2e 0%, #2e2216 50%, #15100a 82%)",
+    "radial-gradient(ellipse at 50% 30%, #9a6430 0%, #46280f 48%, #1f1206 80%)"
+  ],
+  "motif": {
+    "type": "arch",
+    "color": "#f2c98a",
+    "opacity": 0.6,
+    "pulse": 0.035,
+    "rotateDegPer8Bars": 0,
+    "size": 520,
+    "y": 38
+  },
+  "title": { "color": "#fbe9cc", "weight": 500, "letterSpacing": "0.06em", "y": 66 },
+  "caption": {
+    "color": "#fff6e8",
+    "shadow": "0 2px 10px rgba(40, 18, 6, 0.7)",
+    "plate": { "color": "rgba(46, 22, 10, 0.5)", "radius": 22, "padX": 34, "padY": 4 }
+  },
+  "particles": { "count": 38, "color": "#ffcf8a", "minSize": 3, "maxSize": 9, "rise": 22, "sway": 16, "opacity": 0.55, "seed": 7 },
+  "vignette": 0.55,
+  "captionDefaults": { "stepBeats": 0.5, "fadeBeats": 0.75 },
+  "overlayDefaults": { "opacity": 0.7 }
+}

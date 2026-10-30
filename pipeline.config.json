@@ -1,5 +1,8 @@
 {
-  "timeline": "timeline/hikmat-ki-talaash.json",
+  "timeline": "timeline/episode-01.json",
+  "episodes": "timeline/episode-{nn}.json",
+  "themesDir": "themes",
+  "defaultTheme": "starlit",
   "outDir": "out",
   "mediaDir": "assets/media",
   "mediaManifest": "assets/media.manifest.json",

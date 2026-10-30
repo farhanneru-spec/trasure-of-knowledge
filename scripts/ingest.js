@@ -4,18 +4,15 @@
 //   npm run ingest -- --watch      keep running; re-ingest whenever media or the timeline changes
 //   npm run ingest -- --force      re-probe every file, not just changed ones
 import path from 'node:path';
-import { parseArgs } from 'node:util';
 import { createClock } from '../src/beat.js';
+import { parseJobArgs } from '../src/cli.js';
 import { ingest, watchPaths } from '../src/ingest.js';
 import { MEDIA_DIR, MANIFEST_PATH } from '../src/media.js';
 import { loadProject, printIssues, processingEnabled, CONFIG, ROOT } from '../src/project.js';
 
-const { values: opt } = parseArgs({
-  options: {
-    watch: { type: 'boolean', default: false },
-    force: { type: 'boolean', default: false },
-    timeline: { type: 'string' },
-  },
+const { opt, job } = parseJobArgs({
+  watch: { type: 'boolean', default: false },
+  force: { type: 'boolean', default: false },
 });
 const rel = (p) => path.relative(ROOT, p);
 
@@ -44,7 +41,7 @@ async function run(force) {
   for (const f of r.scan.skipped) console.log(`  skipped ${f} (not a supported image/video type)`);
   for (const [id, a] of assets) if (a.error) console.log(`  ERROR  ${id}: ${a.error}`);
 
-  const { timeline: tl, issues } = loadProject(opt.timeline);
+  const { timeline: tl, issues } = loadProject(job);
   const clock = createClock(tl.clock);
   const placed = new Set(tl.media.map((m) => m.asset));
 
@@ -72,7 +69,7 @@ async function run(force) {
 const failed = await run(opt.force);
 if (!opt.watch) process.exitCode = failed ? 1 : 0;
 else {
-  const timelineDir = path.dirname(path.resolve(ROOT, opt.timeline ?? CONFIG.timeline));
+  const timelineDir = path.dirname(path.resolve(ROOT, job.file));
   console.log(`\nwatching ${rel(MEDIA_DIR)} and ${rel(timelineDir)} (Ctrl+C to stop)`);
   watchPaths([MEDIA_DIR, timelineDir], async () => {
     console.log(`\n--- ${new Date().toLocaleTimeString()} ---`);

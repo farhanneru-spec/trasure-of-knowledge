@@ -8,6 +8,9 @@ const file = JSON.parse(fs.readFileSync(path.join(ROOT, 'pipeline.config.json'),
 export const CONFIG = {
   mediaDir: 'assets/media',
   mediaManifest: 'assets/media.manifest.json',
+  episodes: 'timeline/episode-{nn}.json',
+  themesDir: 'themes',
+  defaultTheme: 'starlit',
   ...file,
   processing: {
     enabled: true,

@@ -6,30 +6,21 @@
   "width": 1920,
   "height": 1080,
   "lengthBars": 16,
+  "theme": "starlit",
 
   "vo": { "grid": 1 },
-
-  "captionDefaults": {
-    "reveal": "word",
-    "stepBeats": 0.5,
-    "wordInBeats": 0.5,
-    "holdBeats": 1,
-    "fadeBeats": 0.5,
-    "maxCharsPerLine": 42
-  },
 
   "music": { "file": null, "at": "1:1" },
 
   "autoMedia": true,
-  "mediaDefaults": { "fit": "cover", "layer": "back", "opacity": 0.85, "fadeBeats": 1 },
-  "overlayDefaults": { "blend": "screen", "opacity": 0.8, "fadeBeats": 1 },
+  "mediaDefaults": { "opacity": 0.85, "fadeBeats": 1 },
   "media": [],
 
   "scenes": [
-    { "id": "intro",  "at": "1:1",  "bars": 4, "bg": "radial-gradient(ellipse at 50% 40%, #1b2440 0%, #0a0d18 70%)" },
-    { "id": "wisdom", "at": "5:1",  "bars": 4, "bg": "radial-gradient(ellipse at 50% 40%, #2a1f3d 0%, #0d0a16 70%)" },
-    { "id": "within", "at": "9:1",  "bars": 4, "bg": "radial-gradient(ellipse at 50% 40%, #13322f 0%, #071211 70%)" },
-    { "id": "title",  "at": "13:1", "bars": 4, "bg": "radial-gradient(ellipse at 50% 40%, #3a2a12 0%, #120c05 70%)", "title": "Hikmat Ki Talaash" }
+    { "id": "intro",  "at": "1:1",  "bars": 4 },
+    { "id": "wisdom", "at": "5:1",  "bars": 4 },
+    { "id": "within", "at": "9:1",  "bars": 4 },
+    { "id": "title",  "at": "13:1", "bars": 4, "title": "Hikmat Ki Talaash" }
   ],
 
   "cues": [

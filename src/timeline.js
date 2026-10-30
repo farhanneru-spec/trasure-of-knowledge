@@ -47,14 +47,15 @@ const byStart = (a, b) => a.startBeat - b.startBeat;
  * Turn the authored timeline (positions in bars/beats) into absolute beats and
  * seconds, and collect sync problems. Pure: audio durations are passed in.
  */
-export function resolveTimeline(raw, { audioDurations = {}, media: assets = {} } = {}) {
+export function resolveTimeline(raw, { audioDurations = {}, media: assets = {}, theme = null } = {}) {
   const issues = [];
   const error = (msg) => issues.push({ level: 'error', msg });
   const warn = (msg) => issues.push({ level: 'warn', msg });
 
   const clock = createClock({ bpm: raw.bpm, beatsPerBar: raw.beatsPerBar });
   const grid = raw.vo?.grid ?? 1;
-  const capDefaults = { ...CAPTION_DEFAULTS, ...captionOpts(raw.captionDefaults) };
+  // defaults: built-in < theme < timeline
+  const capDefaults = { ...CAPTION_DEFAULTS, ...captionOpts(theme?.captionDefaults), ...captionOpts(raw.captionDefaults) };
 
   const position = (item, label) => {
     try {
@@ -178,13 +179,15 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {} }
   const scenes = (raw.scenes ?? [])
     .map((s) => ({ id: s.id, title: s.title ?? null, bg: s.bg ?? null, startBeat: position(s, `scene ${s.id}`), len: length(s) }))
     .sort(byStart);
+  const palette = theme?.backgrounds ?? [];
   scenes.forEach((s, i) => {
     s.endBeat = s.len != null ? s.startBeat + s.len : (scenes[i + 1]?.startBeat ?? lengthBeats);
+    s.bg ??= palette.length ? palette[i % palette.length] : null; // a scene's own "bg" wins over the theme
     delete s.len;
   });
 
   // Media layers: images/videos registered by `npm run ingest`
-  const mediaDefaults = { ...MEDIA_DEFAULTS, ...mediaOpts(raw.mediaDefaults) };
+  const mediaDefaults = { ...MEDIA_DEFAULTS, ...mediaOpts(theme?.mediaDefaults), ...mediaOpts(raw.mediaDefaults) };
   const fps = raw.fps ?? 30;
   const media = [];
 
@@ -293,7 +296,7 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {} }
     }
 
     // overlays span their whole scene (or the whole timeline), stacked on the front layer, looping
-    const overlayDefaults = { ...OVERLAY_DEFAULTS, ...mediaOpts(raw.overlayDefaults) };
+    const overlayDefaults = { ...OVERLAY_DEFAULTS, ...mediaOpts(theme?.overlayDefaults), ...mediaOpts(raw.overlayDefaults) };
     for (const id of overlays.sort()) {
       const a = assets[id];
       const scene = a.group ? scenes.find((s) => s.id === a.group) : null;
@@ -366,6 +369,15 @@ export function resolveTimeline(raw, { audioDurations = {}, media: assets = {} }
       captions,
       media,
       music,
+      // only the visual part goes to the scene; the *Defaults sections were applied above
+      theme: theme && {
+        name: theme.name,
+        motif: theme.motif,
+        title: theme.title,
+        caption: theme.caption,
+        particles: theme.particles,
+        vignette: theme.vignette,
+      },
     },
   };
 }

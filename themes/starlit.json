@@ -1,0 +1,13 @@
+{
+  "description": "Night sky: deep blue, violet, teal and gold dusk; rotating eight-point star.",
+  "backgrounds": [
+    "radial-gradient(ellipse at 50% 40%, #1b2440 0%, #0a0d18 70%)",
+    "radial-gradient(ellipse at 50% 40%, #2a1f3d 0%, #0d0a16 70%)",
+    "radial-gradient(ellipse at 50% 40%, #13322f 0%, #071211 70%)",
+    "radial-gradient(ellipse at 50% 40%, #3a2a12 0%, #120c05 70%)"
+  ],
+  "motif": { "type": "star8", "color": "#d9b26a", "opacity": 0.5, "pulse": 0.08, "rotateDegPer8Bars": 45 },
+  "title": { "color": "#f3ead8" },
+  "caption": { "color": "#ffffff" },
+  "vignette": 0
+}

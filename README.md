@@ -1,8 +1,8 @@
 # Hikmat Ki Talaash: motion graphics pipeline
 
 English voice-over locked to a **120 BPM** beat grid, with dynamic **Arabic (RTL) captions**
-revealed word by word on the beat. Everything is authored in bars/beats in one file:
-`timeline/hikmat-ki-talaash.json`.
+revealed word by word on the beat. Each episode is authored in bars/beats in one file,
+`timeline/episode-NN.json`, and its look comes from a theme in `themes/`.
 
 At 120 BPM in 4/4: **1 beat = 0.5s, 1 bar = 2s**. Positions are `"bar:beat"` (1-based, like a DAW,
 e.g. `"6:1"`, `"6:2.5"`) or a plain 0-based beat number.
@@ -14,14 +14,46 @@ e.g. `"6:1"`, `"6:2.5"`) or a plain 0-based beat number.
 | `npm run doctor` | checks that everything needed is inside this folder and works offline |
 | `npm run ingest` | registers images/videos in `assets/media/` and prints where they land (`-- --watch` to keep running, `-- --force` to re-probe all) |
 | `npm run validate` | resolves the timeline, prints every cue in bar:beat and seconds, flags sync problems |
-| `npm run click` | writes `out/click-120bpm.wav`, a metronome (downbeats accented) for recording the VO |
-| `npm run captions` | writes `out/captions.ar.srt`, `captions.ar.vtt`, `captions.en.srt`, `vo-cue-sheet.csv` |
+| `npm run click` | writes `out/<job>/click-120bpm.wav`, a metronome (downbeats accented) for recording the VO |
+| `npm run captions` | writes `out/<job>/captions.ar.srt`, `captions.ar.vtt`, `captions.en.srt`, `vo-cue-sheet.csv` |
 | `npm run preview` | serves the scene at http://127.0.0.1:5173/scene/ with VO playback |
-| `npm run still -- 6:3` | renders one frame to `out/stills/` |
-| `npm run render` | renders all frames to `out/frames/`, then encodes `out/hikmat-ki-talaash.mp4` if ffmpeg is installed |
+| `npm run still -- 6:3` | renders one frame to `out/<job>/stills/` |
+| `npm run render` | renders all frames to `out/<job>/frames/`, then encodes `out/<job>.mp4` |
+
+Every command takes `--episode N` (default: `timeline` in `pipeline.config.json`) and `--theme NAME`:
+
+```
+node scripts/render.js --episode 1 --theme cozy-courtyard
+npm run preview -- --episode 1 --theme cozy-courtyard
+```
 
 Render options: `--from 5:1 --to 9:1`, `--workers N` (parallel browsers, default = half the CPU threads),
 `--debug` (burn in the beat/VO overlay), `--no-encode`.
+
+Each run is a *job* named after the episode (plus the theme when `--theme` is given). Its frames, stills,
+captions and click track go to `out/<job>/` and the video to `out/<job>.mp4`, e.g.
+`out/episode-01-cozy-courtyard.mp4`, so episodes and theme variants never overwrite each other.
+
+## Episodes and themes
+
+**Episodes:** copy `timeline/episode-01.json` to `episode-02.json` and change the VO, captions, scenes and
+media. Its `"theme"` picks the default look; `--theme` overrides it for one render.
+
+**Themes** (`themes/<name>.json`) set the look. Everything is optional; sizes are px at 1080p.
+
+| key | what |
+|---|---|
+| `backgrounds` | CSS backgrounds given to scenes in order (cycling); a scene's own `"bg"` wins |
+| `motif` | `type` (`star8`, `arch`, `none`), `color`, `opacity`, `pulse` (beat swell), `rotateDegPer8Bars`, `size`, `y` (% from top) |
+| `title` | `font`, `weight`, `color`, `size`, `letterSpacing`, `y` |
+| `caption` | `color`, `size`, `shadow`, `plate` (`color`, `radius`, `padX`, `padY`): a soft panel behind the Arabic text |
+| `particles` | ambient drifting lights: `count`, `color`, `minSize`, `maxSize`, `rise` (px/s), `sway`, `opacity`, `seed` |
+| `vignette` | 0–1 edge darkening |
+| `captionDefaults`, `mediaDefaults`, `overlayDefaults` | defaults for the timeline sections of the same name |
+
+Precedence is built-in < theme < timeline, so a timeline only needs to state what makes that episode different.
+Included: `starlit` (night blues, rotating star; the original look) and `cozy-courtyard` (draft: warm dusk,
+arched doorway with a lantern, embers, caption plate). Particles are seeded, so every render is identical.
 
 ## Images and video
 
@@ -99,7 +131,7 @@ Nothing in the pipeline calls an AI model or any web service, and nothing is fet
 - **Network guard:** with `"offline": true` in `pipeline.config.json`, the renderer blocks every request that isn't
   to its own local server and prints any it blocked, so an accidental external URL fails visibly.
 - **ffmpeg** (optional, for MP4): resolved from `tools/ffmpeg/ffmpeg.exe` first, then the `FFMPEG` env var, then PATH.
-  Without it, frames still render to `out/frames/`.
+  Without it, frames still render to `out/<job>/frames/`.
 
 `pipeline.config.json` holds the paths (timeline, output, browser, ffmpeg) and the preview port.
 Copying the whole folder, `node_modules` and `.cache` included, to another Windows PC with Node 20+ is enough to render.
@@ -157,8 +189,9 @@ next one, and content past the end of the timeline.
 ## Layout
 
 ```
-pipeline.config.json   paths, preview port, offline guard
-timeline/              authored timeline (edit this)
+pipeline.config.json   paths, episode pattern, default theme, preview port, offline guard, processing
+timeline/              episode timelines, episode-NN.json (edit these)
+themes/                looks: starlit, cozy-courtyard
 src/                   beat clock, resolver/validator, caption export, WAV tools, static server
 scene/                 HTML scene; renderFrame(t) is a pure function of time
 scripts/               CLI entry points (doctor, validate, captions, click, preview, render)
@@ -169,5 +202,6 @@ assets/.processed/     cache of converted/scaled media (safe to delete)
 assets/vo/             VO takes, one file per cue id
 tools/ffmpeg/          put ffmpeg.exe here for self-contained MP4 encoding
 .cache/puppeteer/      bundled chrome-headless-shell
-out/                   generated: resolved timeline, captions, click, frames, video
+out/<job>/             generated per episode/theme: resolved timeline, captions, click, frames, stills
+out/<job>.mp4          the rendered video
 ```

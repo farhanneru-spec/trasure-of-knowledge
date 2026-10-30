@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { MEDIA_DIR, scanMedia, readManifest, isStale } from '../src/media.js';
-import { loadProject, hasTool, findLocalBrowser, processingEnabled, CONFIG, FFMPEG, ROOT } from '../src/project.js';
+import { loadProject, listEpisodes, hasTool, findLocalBrowser, processingEnabled, CONFIG, FFMPEG, ROOT } from '../src/project.js';
+import { listThemes } from '../src/themes.js';
 
 const rows = [];
 const report = (level, what, detail) => rows.push({ level, what, detail });
@@ -79,6 +80,12 @@ else {
   const bytes = fs.existsSync(cacheDir) ? fs.readdirSync(cacheDir).reduce((n, f) => n + fs.statSync(path.join(cacheDir, f)).size, 0) : 0;
   report('ok', 'media processing', `on (images ≤${P.imageMaxEdge}px, video ≤${P.videoMaxEdge}px, proxies: ${P.videoProxy}); ${processed} processed, cache ${(bytes / 1048576).toFixed(1)} MB`);
 }
+
+// Episodes and themes
+const episodes = listEpisodes();
+report(episodes.length ? 'ok' : 'warn', 'episodes', episodes.length ? episodes.map((n) => `${n}`).join(', ') : `none matching ${CONFIG.episodes}`);
+const themes = listThemes();
+report(themes.includes(CONFIG.defaultTheme) ? 'ok' : 'fail', 'themes', `${themes.join(', ')} (default: ${CONFIG.defaultTheme})`);
 
 // Timeline
 const { issues } = loadProject();

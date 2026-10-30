@@ -39,29 +39,38 @@ html, body { margin: 0; background: #000; overflow: hidden; }
   transform-origin: 50% 50%;
 }
 
-#star {
+/* Theme-driven elements: colours, sizes and positions are set by scene.js from the
+   timeline's theme (themes/*.json); this file only holds structure. */
+#motif {
   position: absolute;
   left: 50%;
-  top: 40%;
-  width: calc(380px * var(--u));
-  height: calc(380px * var(--u));
-  margin: calc(-190px * var(--u)) 0 0 calc(-190px * var(--u));
   fill: none;
-  stroke: #d9b26a;
+  stroke: currentColor;
   stroke-width: 1.4;
+  overflow: visible;
 }
-#star .faint { stroke-opacity: 0.35; }
+#motif .faint { stroke-opacity: 0.35; }
+#motif .glow { fill: currentColor; stroke: none; }
+
+#particles { position: absolute; inset: 0; pointer-events: none; }
+#particles .p {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+
+#vignette { position: absolute; inset: 0; pointer-events: none; }
 
 #title {
   position: absolute;
   left: 0;
   right: 0;
-  top: 62%;
   margin: 0;
   text-align: center;
-  font: 600 calc(84px * var(--u)) / 1 'Cormorant Garamond', Georgia, serif;
-  letter-spacing: 0.04em;
-  color: #f3ead8;
+  line-height: 1;
   opacity: 0;
 }
 
@@ -75,10 +84,11 @@ html, body { margin: 0; background: #000; overflow: hidden; }
   direction: rtl;
   unicode-bidi: isolate;
   text-align: center;
-  font: 700 calc(64px * var(--u)) / 1.7 'Noto Naskh Arabic', 'Segoe UI', Tahoma, 'Arial', sans-serif;
-  color: #fff;
-  text-shadow: 0 calc(2px * var(--u)) calc(14px * var(--u)) rgba(0, 0, 0, 0.65);
+  font-family: 'Noto Naskh Arabic', 'Segoe UI', Tahoma, 'Arial', sans-serif;
+  font-weight: 700;
+  line-height: 1.7;
 }
+#caption .plate { display: inline-block; }
 #caption .w { display: inline-block; opacity: 0; will-change: transform, opacity; }
 
 #debug {

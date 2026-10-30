@@ -1,37 +1,39 @@
 // Renders the scene frame by frame with Puppeteer, then (if ffmpeg is available)
 // encodes MP4 with the VO mixed in at its beat positions and the Arabic SRT as a soft track.
 //
-//   node scripts/render.js                   full render
+//   node scripts/render.js                               default timeline, full render
+//   node scripts/render.js --episode 1 --theme cozy-courtyard
 //   node scripts/render.js --from 5:1 --to 9:1
-//   node scripts/render.js --still 6:3       single PNG
-//   options: --workers N (parallel pages, default half the CPU threads),
-//            --debug (burn in beat overlay), --no-encode, --timeline <file>
+//   node scripts/render.js --still 6:3                   single PNG
+//   options: --episode N, --theme NAME, --timeline FILE,
+//            --workers N (parallel browsers, default half the CPU threads),
+//            --debug (burn in beat overlay), --no-encode
+// Output goes to out/<job>/ (frames, stills, captions) and out/<job>.mp4,
+// where <job> is the timeline name plus the theme when --theme is given.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { parseArgs } from 'node:util';
 import puppeteer from 'puppeteer';
 import { createClock } from '../src/beat.js';
 import { writeCaptionFiles } from '../src/captions.js';
+import { parseJobArgs } from '../src/cli.js';
 import { ensureIngested } from '../src/ingest.js';
 import { loadProject, printIssues, hasTool, findLocalBrowser, CONFIG, FFMPEG, OUT, ROOT } from '../src/project.js';
 import { startServer } from '../src/server.js';
 
-const { values: opt } = parseArgs({
-  options: {
-    from: { type: 'string' },
-    to: { type: 'string' },
-    still: { type: 'string' },
-    workers: { type: 'string', default: String(Math.max(1, Math.floor(os.availableParallelism() / 2))) },
-    debug: { type: 'boolean', default: false },
-    'no-encode': { type: 'boolean', default: false },
-    timeline: { type: 'string' },
-  },
+const { opt, job } = parseJobArgs({
+  from: { type: 'string' },
+  to: { type: 'string' },
+  still: { type: 'string' },
+  workers: { type: 'string', default: String(Math.max(1, Math.floor(os.availableParallelism() / 2))) },
+  debug: { type: 'boolean', default: false },
+  'no-encode': { type: 'boolean', default: false },
 });
 
 await ensureIngested();
-const { timeline: tl, issues } = loadProject(opt.timeline);
+const { timeline: tl, issues, dataUrl } = loadProject(job);
+console.log(`${job.name}: ${job.file}, theme ${tl.theme?.name ?? 'none'}`);
 if (printIssues(issues)) process.exit(1);
 const clock = createClock(tl.clock);
 const parseTime = (v) => (v.includes(':') ? clock.toSec(clock.parse(v)) : Number(v));
@@ -66,7 +68,8 @@ try {
       });
     }
     await page.setViewport({ width: tl.width, height: tl.height, deviceScaleFactor: 1 });
-    await page.goto(`${server.url}/scene/index.html?mode=render${opt.debug ? '&debug' : ''}`, { waitUntil: 'networkidle0' });
+    const query = `mode=render&data=${encodeURIComponent(dataUrl)}${opt.debug ? '&debug' : ''}`;
+    await page.goto(`${server.url}/scene/index.html?${query}`, { waitUntil: 'networkidle0' });
     await page.waitForFunction('window.sceneReady === true', { timeout: 30000 });
     return page;
   }
@@ -80,7 +83,7 @@ try {
   };
 
   if (opt.still) {
-    const dir = path.join(OUT, 'stills');
+    const dir = path.join(job.dir, 'stills');
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `still_${opt.still.replace(/[:.]/g, '-')}.png`);
     await shoot(await openScene(), parseTime(opt.still), file);
@@ -90,7 +93,7 @@ try {
     const to = opt.to ? parseTime(opt.to) : tl.lengthSec;
     const first = Math.round(from * tl.fps);
     const count = Math.round(to * tl.fps) - first;
-    const framesDir = path.join(OUT, 'frames');
+    const framesDir = path.join(job.dir, 'frames');
     fs.rmSync(framesDir, { recursive: true, force: true });
     fs.mkdirSync(framesDir, { recursive: true });
 
@@ -136,7 +139,7 @@ function encode({ from, duration, framesDir }) {
   for (const a of audio) args.push('-i', path.resolve(ROOT, a.file));
 
   // soft Arabic subtitle track only for full renders (times are absolute)
-  const subs = from === 0 ? writeCaptionFiles(tl, OUT).find((f) => f.endsWith('captions.ar.srt')) : null;
+  const subs = from === 0 ? writeCaptionFiles(tl, job.dir).find((f) => f.endsWith('captions.ar.srt')) : null;
   if (subs) args.push('-i', subs);
 
   const map = ['-map', '0:v'];
@@ -153,7 +156,7 @@ function encode({ from, duration, framesDir }) {
   }
   if (subs) map.push('-map', `${audio.length + 1}:s`);
 
-  const outFile = path.join(OUT, `${tl.project.toLowerCase().replace(/\s+/g, '-')}.mp4`);
+  const outFile = path.join(OUT, `${job.name}.mp4`);
   args.push(
     ...map,
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18',

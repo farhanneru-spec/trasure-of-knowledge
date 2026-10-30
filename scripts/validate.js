@@ -1,13 +1,15 @@
 // Checks VO/caption sync against the beat grid and prints the resolved cue list.
 import { createClock } from '../src/beat.js';
+import { parseJobArgs } from '../src/cli.js';
 import { ensureIngested } from '../src/ingest.js';
 import { loadProject, printIssues } from '../src/project.js';
 
+const { job } = parseJobArgs();
 await ensureIngested();
-const { timeline: tl, issues } = loadProject(process.argv[2]);
+const { timeline: tl, issues } = loadProject(job);
 const clock = createClock(tl.clock);
 
-console.log(`${tl.project}: ${tl.clock.bpm} BPM, ${tl.clock.beatsPerBar}/4, beat = ${clock.beatSec}s, ` +
+console.log(`${tl.project} [${job.name}, theme ${tl.theme?.name}]: ${tl.clock.bpm} BPM, ${tl.clock.beatsPerBar}/4, beat = ${clock.beatSec}s, ` +
   `${tl.lengthBeats / tl.clock.beatsPerBar} bars = ${tl.lengthSec}s @ ${tl.fps}fps\n`);
 
 console.log('VO cues');
