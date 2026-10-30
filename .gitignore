@@ -1,0 +1,15 @@
+# Dependencies and bundled binaries: present in the working folder, too large for git.
+# Restore on a fresh clone: `npm install`, `npx puppeteer browsers install chrome-headless-shell`,
+# and put ffmpeg.exe in tools/ffmpeg/ (see README, "Self-contained / offline").
+node_modules/
+.cache/
+tools/ffmpeg/*.exe
+
+# Generated
+out/
+assets/.processed/
+assets/media.manifest.json
+
+# OS clutter
+Thumbs.db
+desktop.ini

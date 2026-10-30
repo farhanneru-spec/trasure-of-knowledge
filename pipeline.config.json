@@ -1,0 +1,20 @@
+{
+  "timeline": "timeline/hikmat-ki-talaash.json",
+  "outDir": "out",
+  "mediaDir": "assets/media",
+  "mediaManifest": "assets/media.manifest.json",
+  "browserDir": ".cache/puppeteer/chrome-headless-shell",
+  "ffmpeg": "tools/ffmpeg/ffmpeg.exe",
+  "ffprobe": "tools/ffmpeg/ffprobe.exe",
+  "previewPort": 5173,
+  "offline": true,
+  "processing": {
+    "enabled": true,
+    "cacheDir": "assets/.processed",
+    "imageMaxEdge": 3840,
+    "videoMaxEdge": 1920,
+    "videoProxy": "always",
+    "proxyKeyframeInterval": 1,
+    "proxyCrf": 18
+  }
+}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hikmat Ki Talaash · scene</title>
+<link rel="stylesheet" href="scene.css">
+</head>
+<body>
+<div id="stage">
+  <div class="bg" id="bgA"></div>
+  <div class="bg" id="bgB"></div>
+  <div class="mediaLayer" id="mediaBack"></div>
+  <svg id="star" viewBox="-100 -100 200 200" aria-hidden="true">
+    <rect x="-62" y="-62" width="124" height="124"/>
+    <rect x="-62" y="-62" width="124" height="124" transform="rotate(45)"/>
+    <circle r="40"/>
+    <circle r="88" class="faint"/>
+  </svg>
+  <div class="mediaLayer" id="mediaFront"></div>
+  <h1 id="title"></h1>
+  <div id="caption" dir="rtl" lang="ar"></div>
+  <pre id="debug"></pre>
+</div>
+<script type="module" src="scene.js"></script>
+</body>
+</html>

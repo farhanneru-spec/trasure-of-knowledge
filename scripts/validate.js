@@ -1,0 +1,34 @@
+// Checks VO/caption sync against the beat grid and prints the resolved cue list.
+import { createClock } from '../src/beat.js';
+import { ensureIngested } from '../src/ingest.js';
+import { loadProject, printIssues } from '../src/project.js';
+
+await ensureIngested();
+const { timeline: tl, issues } = loadProject(process.argv[2]);
+const clock = createClock(tl.clock);
+
+console.log(`${tl.project}: ${tl.clock.bpm} BPM, ${tl.clock.beatsPerBar}/4, beat = ${clock.beatSec}s, ` +
+  `${tl.lengthBeats / tl.clock.beatsPerBar} bars = ${tl.lengthSec}s @ ${tl.fps}fps\n`);
+
+console.log('VO cues');
+for (const c of tl.cues) {
+  const audio = c.audioSec == null ? 'no audio' : `audio ${c.audioSec.toFixed(2)}s`;
+  console.log(`  ${c.id}  ${clock.label(c.startBeat).padEnd(6)} -> ${clock.label(c.endBeat).padEnd(6)} ` +
+    `${String(c.beats).padStart(3)} beats  ${c.start.toFixed(2)}-${c.end.toFixed(2)}s  ${audio.padEnd(13)} ${c.en}`);
+}
+console.log('\nArabic captions');
+for (const c of tl.captions) {
+  console.log(`  ${c.id.padEnd(9)} ${clock.label(c.startBeat).padEnd(6)} -> ${clock.label(c.endBeat).padEnd(6)} ` +
+    `${c.words.length} words  ${c.text}`);
+}
+
+if (tl.media.length) {
+  console.log('\nMedia layers');
+  for (const m of tl.media) {
+    console.log(`  ${clock.label(m.startBeat).padEnd(6)} -> ${clock.label(m.endBeat).padEnd(6)} ${m.layer.padEnd(5)} ` +
+      `${m.auto ? 'auto' : '    '}  ${m.asset}`);
+  }
+}
+
+console.log(issues.length ? `\n${issues.length} issue(s):` : '\nNo issues.');
+process.exitCode = printIssues(issues) ? 1 : 0;

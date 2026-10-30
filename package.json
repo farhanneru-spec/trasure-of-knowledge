@@ -1,0 +1,18 @@
+{
+  "name": "hikmat-ki-talaash",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "doctor": "node scripts/doctor.js",
+    "ingest": "node scripts/ingest.js",
+    "validate": "node scripts/validate.js",
+    "captions": "node scripts/captions.js",
+    "click": "node scripts/click.js",
+    "preview": "node scripts/preview.js",
+    "render": "node scripts/render.js",
+    "still": "node scripts/render.js --still"
+  },
+  "dependencies": {
+    "puppeteer": "^25.16.0"
+  }
+}

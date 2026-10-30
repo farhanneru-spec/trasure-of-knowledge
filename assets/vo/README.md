@@ -1,0 +1,3 @@
+Put English VO takes here, one per cue, named after the cue id: `vo01.wav`, `vo02.wav`, ...
+Trim the silence at the head so the line starts at 0. The pipeline places each file at its cue's beat.
+WAV durations are measured natively; other formats need ffprobe on PATH.

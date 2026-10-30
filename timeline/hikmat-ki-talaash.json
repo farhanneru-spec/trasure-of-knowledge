@@ -1,0 +1,67 @@
+{
+  "project": "Hikmat Ki Talaash",
+  "bpm": 120,
+  "beatsPerBar": 4,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "lengthBars": 16,
+
+  "vo": { "grid": 1 },
+
+  "captionDefaults": {
+    "reveal": "word",
+    "stepBeats": 0.5,
+    "wordInBeats": 0.5,
+    "holdBeats": 1,
+    "fadeBeats": 0.5,
+    "maxCharsPerLine": 42
+  },
+
+  "music": { "file": null, "at": "1:1" },
+
+  "autoMedia": true,
+  "mediaDefaults": { "fit": "cover", "layer": "back", "opacity": 0.85, "fadeBeats": 1 },
+  "overlayDefaults": { "blend": "screen", "opacity": 0.8, "fadeBeats": 1 },
+  "media": [],
+
+  "scenes": [
+    { "id": "intro",  "at": "1:1",  "bars": 4, "bg": "radial-gradient(ellipse at 50% 40%, #1b2440 0%, #0a0d18 70%)" },
+    { "id": "wisdom", "at": "5:1",  "bars": 4, "bg": "radial-gradient(ellipse at 50% 40%, #2a1f3d 0%, #0d0a16 70%)" },
+    { "id": "within", "at": "9:1",  "bars": 4, "bg": "radial-gradient(ellipse at 50% 40%, #13322f 0%, #071211 70%)" },
+    { "id": "title",  "at": "13:1", "bars": 4, "bg": "radial-gradient(ellipse at 50% 40%, #3a2a12 0%, #120c05 70%)", "title": "Hikmat Ki Talaash" }
+  ],
+
+  "cues": [
+    {
+      "id": "vo01", "at": "2:1", "beats": 6, "file": "assets/vo/vo01.wav",
+      "en": "Every journey begins with a single question.",
+      "ar": "كل رحلة تبدأ بسؤال واحد."
+    },
+    {
+      "id": "vo02", "at": "4:1", "beats": 6, "file": "assets/vo/vo02.wav",
+      "en": "Wisdom is not given. It is earned.",
+      "ar": "الحكمة لا تُعطى، بل تُكتسب."
+    },
+    {
+      "id": "vo03", "at": "6:1", "beats": 4, "file": "assets/vo/vo03.wav",
+      "en": "Listen. Reflect. Seek.",
+      "ar": "استمع. تأمّل. ابحث.",
+      "caption": { "stepBeats": 1 }
+    },
+    {
+      "id": "vo04", "at": "8:1", "beats": 8, "file": "assets/vo/vo04.wav",
+      "en": "The answers you need are already within you.",
+      "ar": "الإجابات التي تحتاجها موجودة في داخلك."
+    },
+    {
+      "id": "vo05", "at": "11:1", "beats": 8, "file": "assets/vo/vo05.wav",
+      "en": "This is Hikmat Ki Talaash, the search for wisdom.",
+      "ar": "هذه هي حكمت كي تلاش، رحلة البحث عن الحكمة."
+    }
+  ],
+
+  "captions": [
+    { "id": "title-ar", "at": "14:1", "bars": 2, "ar": "البحث عن الحكمة", "reveal": "line", "fadeBeats": 1 }
+  ]
+}
